@@ -2,7 +2,6 @@
 using Argus.Sync.Example.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,12 +9,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Argus.Sync.Example.Migrations
 {
-    [DbContext(typeof(TxOutPutBySlotDbContext))]
-    [Migration("20250324193931_AddSpentSlotField")]
-    partial class AddSpentSlotField
+    [DbContext(typeof(OrderBookDbContext))]
+    partial class OrderBookDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,19 +45,37 @@ namespace Argus.Sync.Example.Migrations
                     b.ToTable("ReducerStates", "public");
                 });
 
-            modelBuilder.Entity("Argus.Sync.Example.Data.Models.TxOutputBySlot", b =>
+            modelBuilder.Entity("Argus.Sync.Example.Data.Models.OrderBySlot", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<decimal>("Index")
                         .HasColumnType("numeric(20,0)");
 
+                    b.Property<string>("AssetName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OwnerPkh")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PolicyId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric(20,0)");
+
                     b.Property<byte[]>("RawCbor")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("RawDatum")
                         .IsRequired()
                         .HasColumnType("bytea");
 
@@ -70,9 +85,9 @@ namespace Argus.Sync.Example.Migrations
                     b.Property<decimal?>("SpentSlot")
                         .HasColumnType("numeric(20,0)");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id", "Index");
 
-                    b.ToTable("TxOutputBySlot", "public");
+                    b.ToTable("OrderBySlots", "public");
                 });
 #pragma warning restore 612, 618
         }

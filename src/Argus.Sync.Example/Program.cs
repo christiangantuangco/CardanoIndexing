@@ -5,8 +5,8 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCardanoIndexer<TxOutPutBySlotDbContext>(builder.Configuration);
-builder.Services.AddReducers<TxOutPutBySlotDbContext, IReducerModel>(builder.Configuration);
+builder.Services.AddCardanoIndexer<OrderBookDbContext>(builder.Configuration);
+builder.Services.AddReducers<OrderBookDbContext, IReducerModel>(builder.Configuration);
 
 var app = builder.Build();
 
