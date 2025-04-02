@@ -10,15 +10,15 @@ using Block = Chrysalis.Cardano.Core.Types.Block.Block;
 namespace Argus.Sync.Example.Reducers;
 
 public class TransactionOutputReducer(
-    IDbContextFactory<TxOutPutBySlotDbContext> dbContextFactory
+    IDbContextFactory<OrderBookDbContext> dbContextFactory
 ) : IReducer<TxOutputBySlot>
 {
     public async Task RollBackwardAsync(ulong slot)
     {
-        using TxOutPutBySlotDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+        using OrderBookDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
         await dbContext
-            .TxOutputBySlot
+            .OrderBySlots
             .Where(e => e.Slot >= slot)
             .ExecuteDeleteAsync();
     }
@@ -27,7 +27,7 @@ public class TransactionOutputReducer(
     {
         if (!block.TransactionBodies().Any()) return;
 
-        await using TxOutPutBySlotDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+        await using OrderBookDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
         IEnumerable<TransactionBody> txBodies = block.TransactionBodies();
         await ProcessInputs(txBodies, block.Slot() ?? 0, dbContext);
@@ -37,17 +37,17 @@ public class TransactionOutputReducer(
         await dbContext.DisposeAsync();
     }
 
-    public async Task ProcessInputs(IEnumerable<TransactionBody> txBodies, ulong slot, TxOutPutBySlotDbContext dbContext)
+    public async Task ProcessInputs(IEnumerable<TransactionBody> txBodies, ulong slot, OrderBookDbContext dbContext)
     {
         List<(string Id, ulong Index)> existingOutputs = [.. txBodies
             .SelectMany(tx => tx.Inputs()
                 .Select(input => (input.TransactionId(), input.Index())))];
 
-        Expression<Func<TxOutputBySlot, bool>> predicate = PredicateBuilder.False<TxOutputBySlot>();
+        Expression<Func<OrderBySlot, bool>> predicate = PredicateBuilder.False<OrderBySlot>();
 
         existingOutputs.ForEach(o => predicate = predicate.Or(p => p.Id == o.Id && p.Index == o.Index));
 
-        List<TxOutputBySlot> existingTxOutputBySlots = [.. dbContext.TxOutputBySlot.Where(predicate)];
+        List<OrderBySlot> existingTxOutputBySlots = [.. dbContext.OrderBySlots.Where(predicate)];
 
         if (existingTxOutputBySlots.Any())
         {
@@ -56,30 +56,32 @@ public class TransactionOutputReducer(
                 txOutputBySlot.SpentSlot = slot;
             });
 
-            dbContext.TxOutputBySlot.UpdateRange(existingTxOutputBySlots);
+            dbContext.OrderBySlots.UpdateRange(existingTxOutputBySlots);
         }
     }
 
-    public async Task ProcessOutputs(IEnumerable<TransactionBody> txBodies, ulong slot, TxOutPutBySlotDbContext dbContext)
+    public async Task ProcessOutputs(IEnumerable<TransactionBody> txBodies, ulong slot, OrderBookDbContext dbContext)
     {
-        IEnumerable<TxOutputBySlot> txOutputBySlots = txBodies.SelectMany(txBody => 
-            txBody
-                .Outputs()
-                .Select((output, index) =>
-                {
-                    TxOutputBySlot txOutputBySlot = new(
-                        txBody.Id(),
-                        (ulong)index,
-                        slot,
-                        null,
-                        Convert.ToHexString(output.Address()?.Raw ?? []),
-                        output?.Raw ?? []
-                    );
-                    return txOutputBySlot;
-                })
-        );
+        // IEnumerable<OrderBySlot> txOutputBySlots = txBodies.SelectMany(txBody => 
+        //     txBody
+        //         .Outputs()
+        //         .Select((output, index) =>
+        //         {
+        //             OrderBySlot txOutputBySlot = new(
+        //                 txBody.Id(),
+        //                 (ulong)index,
+        //                 slot,
+        //                 null,
+        //                 Convert.ToHexString(output.Address()?.Raw ?? []),
+        //                 output?.Raw ?? []
+        //             );
+        //             return txOutputBySlot;
+        //         })
+        // );
 
-        dbContext.TxOutputBySlot
-            .AddRange(txOutputBySlots);
+        // dbContext.OrderBySlots
+        //     .AddRange(txOutputBySlots);
+
+        await Task.CompletedTask;
     }
 }
